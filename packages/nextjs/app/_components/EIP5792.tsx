@@ -14,21 +14,25 @@ const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   : `http://localhost:${process.env.PORT || 3000}`;
 
 export const EIP5792 = () => {
+  // wagmi hooks not EIP-5792 specific
   const { address, isConnected, chainId } = useAccount();
+  const { connectAsync, connectors } = useConnect();
+
   const [newGreetings, setNewGreetings] = useState("");
 
+  // Scaffold-ETH hooks to get contract abi, address and write to contract (not EIP-5792 specific)
   const { data: YourContract } = useDeployedContractInfo("YourContract");
   const { writeContractAsync: writeYourContractAsync, isPending: isWriteYourContractPending } =
     useScaffoldWriteContract("YourContract");
 
+  // wagmi hooks to batch write to multiple contracts (EIP-5792 specific)
   const { writeContractsAsync, isPending: isBatchContractInteractionPending } = useWriteContracts();
 
   const isLoading = isWriteYourContractPending || isBatchContractInteractionPending;
 
+  // wagmi hooks (EIP-5792 specific)
   const { isSuccess: isEIP5792Wallet, data: walletCapabilites } = useCapabilities({ account: address });
-  const { connectAsync, connectors } = useConnect();
 
-  console.log("isEIP5792Wallet", walletCapabilites);
   const handleBatchTransaction = async () => {
     try {
       if (!YourContract || !walletCapabilites || !chainId) return;
@@ -40,7 +44,7 @@ export const EIP5792 = () => {
 
       const isPaymasterSupported = walletCapabilites?.[chainId]?.paymasterService?.supported;
 
-      const basePaymasterURL =
+      const paymasterURL =
         chainId === sepolia.id
           ? process.env.NEXT_PUBLIC_PAYMASTER_URL
           : process.env.NEXT_PUBLIC_PAYMASTER_URL || `${baseUrl}/api/paymaster`;
@@ -62,14 +66,14 @@ export const EIP5792 = () => {
         capabilities: isPaymasterSupported
           ? {
               paymasterService: {
-                url: `${basePaymasterURL}/api/paymaster`,
+                url: `${paymasterURL}/api/paymaster`,
               },
             }
           : undefined,
       });
 
       notification.success(<EIP5972TxNotification message="Transaction completed successfully!" statusId={txnId} />, {
-        duration: 5_000,
+        duration: 10_000,
       });
     } catch (error) {
       const parsedError = getParsedError(error);
