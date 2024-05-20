@@ -25,12 +25,12 @@ export const EIP5792 = () => {
   const { writeContractAsync: writeYourContractAsync, isPending: isWriteYourContractPending } =
     useScaffoldWriteContract("YourContract");
 
-  // wagmi hooks to batch write to multiple contracts (EIP-5792 specific)
+  // wagmi hook to batch write to multiple contracts (EIP-5792 specific)
   const { writeContractsAsync, isPending: isBatchContractInteractionPending } = useWriteContracts();
 
   const isLoading = isWriteYourContractPending || isBatchContractInteractionPending;
 
-  // wagmi hooks (EIP-5792 specific)
+  //  isSuccess is true if the wallet is EIP-5792 compliant
   const { isSuccess: isEIP5792Wallet, data: walletCapabilites } = useCapabilities({ account: address });
 
   const handleBatchTransaction = async () => {
