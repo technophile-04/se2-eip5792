@@ -14,13 +14,15 @@ const EIP5792: NextPage = () => {
   const [newGreetings, setNewGreetings] = useState("");
 
   const { data: YourContract } = useDeployedContractInfo("YourContract");
-  const { writeContractAsync: writeYourContractAsync } = useScaffoldWriteContract("YourContract");
+  const { writeContractAsync: writeYourContractAsync, isPending: isWriteYourContractPending } =
+    useScaffoldWriteContract("YourContract");
 
-  const { writeContractsAsync, data: lastStatusId } = useWriteContracts();
+  const { writeContractsAsync, isPending: isBatchContractInteractionPending } = useWriteContracts();
+
+  const isLoading = isWriteYourContractPending || isBatchContractInteractionPending;
 
   const { isSuccess: isEIP5792Wallet } = useCapabilities({ account: address });
   const { connectAsync, connectors } = useConnect();
-  console.log("The connectors are:", connectors);
 
   const handleBatchTransaction = async () => {
     try {
@@ -31,7 +33,7 @@ const EIP5792: NextPage = () => {
         return;
       }
 
-      await writeContractsAsync({
+      const txnId = await writeContractsAsync({
         contracts: [
           {
             address: YourContract.address,
@@ -46,12 +48,9 @@ const EIP5792: NextPage = () => {
           },
         ],
       });
-      notification.success(
-        <EIP5972TxNotification message="Transaction completed successfully!" statusId={lastStatusId} />,
-        {
-          duration: Infinity,
-        },
-      );
+      notification.success(<EIP5972TxNotification message="Transaction completed successfully!" statusId={txnId} />, {
+        duration: 5_000,
+      });
     } catch (error) {
       const parsedError = getParsedError(error);
       notification.error(parsedError);
@@ -69,8 +68,13 @@ const EIP5792: NextPage = () => {
               <InputBase value={newGreetings} onChange={setNewGreetings} placeholder="Hello EIP-5792..." />
               <button
                 className="btn btn-primary btn-sm self-end"
+                disabled={isLoading}
                 onClick={async () => {
                   try {
+                    if (!newGreetings) {
+                      notification.error("Please input new greetings");
+                      return;
+                    }
                     await writeYourContractAsync({ functionName: "setGreeting", args: [newGreetings] });
                   } catch (error) {
                     console.error(error);
@@ -84,6 +88,7 @@ const EIP5792: NextPage = () => {
               <p className="m-0">Increment Counter</p>
               <button
                 className="btn btn-primary btn-sm"
+                disabled={isLoading}
                 onClick={async () => {
                   try {
                     await writeYourContractAsync({ functionName: "increaseCounter" });
@@ -96,12 +101,21 @@ const EIP5792: NextPage = () => {
               </button>
             </div>
           </div>
-          <button className="btn btn-primary mt-2" disabled={!isEIP5792Wallet} onClick={handleBatchTransaction}>
-            Batch (setGreetings + increment)
-          </button>
+          <div
+            className={`w-full ${!isEIP5792Wallet ? "tooltip tooltip-right" : ""}`}
+            data-tip="Batch transactions are only supported with EIP-5792 compliant wallets"
+          >
+            <button
+              className="btn btn-primary mt-2 w-full"
+              disabled={!isEIP5792Wallet || isLoading}
+              onClick={handleBatchTransaction}
+            >
+              Batch (setGreetings + increment)
+            </button>
+          </div>
           {!isEIP5792Wallet && isConnected && (
             <button
-              className="btn btn-primary"
+              className="btn btn-primary mt-2"
               onClick={async () => {
                 try {
                   const coinbaseConnector = connectors.find(connector => connector.id === "coinbaseWalletSDK");
