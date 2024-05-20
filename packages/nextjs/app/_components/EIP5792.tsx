@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { EIP5972TxNotification } from "./_components/EIP5972TxNotification";
-import { NextPage } from "next";
+import { EIP5972TxNotification } from "./EIP5972TxNotification";
 import { useAccount, useConnect } from "wagmi";
 import { useCapabilities, useWriteContracts } from "wagmi/experimental";
 import { InputBase } from "~~/components/scaffold-eth";
 import { useDeployedContractInfo, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { getParsedError, notification } from "~~/utils/scaffold-eth";
 
-const EIP5792: NextPage = () => {
+export const EIP5792 = () => {
   const { address, isConnected } = useAccount();
   const [newGreetings, setNewGreetings] = useState("");
 
@@ -58,7 +57,7 @@ const EIP5792: NextPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center m-8">
+    <div className="flex flex-col items-center justify-center">
       <div className="card w-96 bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title">Interact with YourContract</h2>
@@ -138,5 +137,3 @@ const EIP5792: NextPage = () => {
     </div>
   );
 };
-
-export default EIP5792;
