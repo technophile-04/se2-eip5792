@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EIP5972TxNotification } from "./EIP5972TxNotification";
+import { sepolia } from "viem/chains";
 import { useAccount, useConnect } from "wagmi";
 import { useCapabilities, useWriteContracts } from "wagmi/experimental";
 import { InputBase } from "~~/components/scaffold-eth";
@@ -39,6 +40,11 @@ export const EIP5792 = () => {
 
       const isPaymasterSupported = walletCapabilites?.[chainId]?.paymasterService?.supported;
 
+      const basePaymasterURL =
+        chainId === sepolia.id
+          ? process.env.NEXT_PUBLIC_PAYMASTER_URL
+          : process.env.NEXT_PUBLIC_PAYMASTER_URL || `${baseUrl}/api/paymaster`;
+
       const txnId = await writeContractsAsync({
         contracts: [
           {
@@ -56,11 +62,12 @@ export const EIP5792 = () => {
         capabilities: isPaymasterSupported
           ? {
               paymasterService: {
-                url: process.env.NEXT_PUBLIC_PAYMASTER_URL || `${baseUrl}/api/paymaster`,
+                url: `${basePaymasterURL}/api/paymaster`,
               },
             }
           : undefined,
       });
+
       notification.success(<EIP5972TxNotification message="Transaction completed successfully!" statusId={txnId} />, {
         duration: 5_000,
       });
