@@ -72,6 +72,13 @@ contract YourContract {
 	}
 
 	/**
+	 * Function that allows anyone to increase the totalCounter state variable
+	 */
+	function increaseCounter() public {
+		totalCounter += 1;
+	}
+
+	/**
 	 * Function that allows the owner to withdraw all the Ether in the contract
 	 * The function can only be called by the owner of the contract as defined by the isOwner modifier
 	 */
