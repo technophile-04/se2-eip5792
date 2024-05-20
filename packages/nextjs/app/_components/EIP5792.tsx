@@ -8,8 +8,12 @@ import { InputBase } from "~~/components/scaffold-eth";
 import { useDeployedContractInfo, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { getParsedError, notification } from "~~/utils/scaffold-eth";
 
+const baseUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : `http://localhost:${process.env.PORT || 3000}`;
+
 export const EIP5792 = () => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const [newGreetings, setNewGreetings] = useState("");
 
   const { data: YourContract } = useDeployedContractInfo("YourContract");
@@ -20,17 +24,20 @@ export const EIP5792 = () => {
 
   const isLoading = isWriteYourContractPending || isBatchContractInteractionPending;
 
-  const { isSuccess: isEIP5792Wallet } = useCapabilities({ account: address });
+  const { isSuccess: isEIP5792Wallet, data: walletCapabilites } = useCapabilities({ account: address });
   const { connectAsync, connectors } = useConnect();
 
+  console.log("isEIP5792Wallet", walletCapabilites);
   const handleBatchTransaction = async () => {
     try {
-      if (!YourContract) return;
+      if (!YourContract || !walletCapabilites || !chainId) return;
 
       if (newGreetings.length === 0) {
         notification.error("Please input new greetings");
         return;
       }
+
+      const isPaymasterSupported = walletCapabilites?.[chainId]?.paymasterService?.supported;
 
       const txnId = await writeContractsAsync({
         contracts: [
@@ -46,6 +53,13 @@ export const EIP5792 = () => {
             functionName: "increaseCounter",
           },
         ],
+        capabilities: isPaymasterSupported
+          ? {
+              paymasterService: {
+                url: process.env.NEXT_PUBLIC_PAYMASTER_URL || `${baseUrl}/api/paymaster`,
+              },
+            }
+          : undefined,
       });
       notification.success(<EIP5972TxNotification message="Transaction completed successfully!" statusId={txnId} />, {
         duration: 5_000,
